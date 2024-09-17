@@ -38,15 +38,27 @@ module.exports = async function (req, res) {
     });
   }
 
-  // Get the bucket ID and file ID from the event data
-  const bucketId = req.payload.bucketId;
-  const fileId = req.payload.fileId;
+  // Parse the event data
+  const eventDataString = req.variables['APPWRITE_FUNCTION_EVENT_DATA'];
 
-  if (!bucketId || !fileId) {
-    console.error('Missing bucketId or fileId in payload');
+  if (!eventDataString) {
+    console.error('No event data received');
     return res.json({
       success: false,
-      message: 'Invalid event payload',
+      message: 'No event data received',
+    });
+  }
+
+  const eventData = JSON.parse(eventDataString);
+
+  const bucketId = eventData.bucketId;
+  const fileId = eventData.$id;
+
+  if (!bucketId || !fileId) {
+    console.error('Missing bucketId or fileId in event data');
+    return res.json({
+      success: false,
+      message: 'Invalid event data',
       details: 'Missing bucketId or fileId'
     });
   }
@@ -56,8 +68,9 @@ module.exports = async function (req, res) {
     console.log(`Downloading file ${fileId} from bucket ${bucketId}`);
     const file = await storage.getFileDownload(bucketId, fileId);
 
-    // Check if the file is an image
+    // Get file info, including permissions
     const fileInfo = await storage.getFile(bucketId, fileId);
+
     if (!fileInfo.mimeType.startsWith('image/')) {
       console.warn(`File ${fileId} is not an image. Mime type: ${fileInfo.mimeType}`);
       return res.json({
@@ -67,15 +80,29 @@ module.exports = async function (req, res) {
       });
     }
 
-    // Strip EXIF metadata using sharp
+    // Strip EXIF metadata
     console.log('Stripping EXIF metadata');
     const strippedBuffer = await sharp(file)
       .withMetadata(false)
       .toBuffer();
 
-    // Upload the stripped file back to the same bucket
-    console.log(`Updating file ${fileId} in bucket ${bucketId}`);
-    await storage.updateFile(bucketId, fileId, strippedBuffer);
+    // Get existing permissions
+    const readPermissions = fileInfo.$read;
+    const writePermissions = fileInfo.$write;
+
+    // Delete the existing file
+    console.log(`Deleting original file ${fileId} from bucket ${bucketId}`);
+    await storage.deleteFile(bucketId, fileId);
+
+    // Upload the stripped file back with the same file ID and permissions
+    console.log(`Uploading stripped file ${fileId} to bucket ${bucketId}`);
+    await storage.createFile(
+      bucketId,
+      fileId,
+      sdk.InputFile.fromBuffer(strippedBuffer, fileInfo.name),
+      readPermissions,
+      writePermissions
+    );
 
     // Return a success message
     console.log('EXIF metadata stripped successfully');
@@ -87,7 +114,7 @@ module.exports = async function (req, res) {
     });
   } catch (error) {
     console.error('Error processing image:', error);
-    
+
     let errorDetails;
     if (error instanceof sdk.AppwriteException) {
       errorDetails = {
