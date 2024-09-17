@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "A simple starter function. Edit `src/main.js` to get started and create something awesome! 🚀",
   "main": "src/main.js",
-  "type": "module",
   "scripts": {
     "format": "prettier --write ."
   },
