@@ -1,7 +1,7 @@
 {
   "name": "starter-template",
   "version": "1.0.0",
-  "description": "",
+  "description": "A simple starter function. Edit `src/main.js` to get started and create something awesome! 🚀",
   "main": "src/main.js",
   "type": "module",
   "scripts": {
@@ -12,5 +12,8 @@
   },
   "devDependencies": {
     "prettier": "^3.2.5"
-  }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
