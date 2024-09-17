@@ -7,8 +7,6 @@ module.exports = async function (req, res) {
 
   // Check for required environment variables
   const requiredEnvVars = [
-    'APPWRITE_FUNCTION_ENDPOINT',
-    'APPWRITE_FUNCTION_PROJECT_ID',
     'APPWRITE_FUNCTION_API_KEY'
   ];
 
@@ -26,8 +24,6 @@ module.exports = async function (req, res) {
   // Client Init
   try {
     client
-      .setEndpoint(req.variables['APPWRITE_FUNCTION_ENDPOINT'])
-      .setProject(req.variables['APPWRITE_FUNCTION_PROJECT_ID'])
       .setKey(req.variables['APPWRITE_FUNCTION_API_KEY']);
   } catch (error) {
     console.error('Error setting up Appwrite client:', error);
